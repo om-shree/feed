@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Find Friends</h2>
+
+    <!-- List of Users -->
+    <div class="list-group">
+        {% for user in users %}
+            {% if user != request.user %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ user.username }}</span>
+                    <button class="btn btn-primary send-request" data-user-id="{{ user.id }}">
+                        Add Friend
+                    </button>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <hr>
+
+    <!-- Friend Requests Section -->
+    <h3>Friend Requests</h3>
+    <div class="list-group">
+        {% for request in friend_requests %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ request.sender.username }} sent you a friend request</span>
+                <div>
+                    <button class="btn btn-success accept-request" data-request-id="{{ request.id }}">Accept</button>
+                    <button class="btn btn-danger reject-request" data-request-id="{{ request.id }}">Reject</button>
+                </div>
+            </div>
+        {% empty %}
+            <p>No friend requests.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- JavaScript for AJAX Requests -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Send Friend Request
+        document.querySelectorAll(".send-request").forEach(button => {
+            button.addEventListener("click", function() {
+                let userId = this.getAttribute("data-user-id");
+
+                fetch(`/send_friend_request/${userId}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": "{{ csrf_token }}",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        this.textContent = "Request Sent";
+                        this.classList.remove("btn-primary");
+                        this.classList.add("btn-secondary");
+                        this.disabled = true;
+                    }
+                });
+            });
+        });
+
+        // Accept Friend Request
+        document.querySelectorAll(".accept-request").forEach(button => {
+            button.addEventListener("click", function() {
+                let requestId = this.getAttribute("data-request-id");
+
+                fetch(`/accept_friend_request/${requestId}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": "{{ csrf_token }}",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        this.closest(".list-group-item").remove();
+                    }
+                });
+            });
+        });
+
+        // Reject Friend Request
+        document.querySelectorAll(".reject-request").forEach(button => {
+            button.addEventListener("click", function() {
+                let requestId = this.getAttribute("data-request-id");
+
+                fetch(`/reject_friend_request/${requestId}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": "{{ csrf_token }}",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        this.closest(".list-group-item").remove();
+                    }
+                });
+            });
+        });
+    });
+</script>
+
+{% endblock %}
